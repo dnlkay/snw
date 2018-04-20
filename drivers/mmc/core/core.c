@@ -205,6 +205,19 @@ static int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 		 mmc_hostname(host), mrq->cmd->opcode,
 		 mrq->cmd->arg, mrq->cmd->flags);
 
+#ifdef DEBUG_MMC_CMD
+	/* [dnlk] getting CMD/ARGS Log to eMMC */
+	if(mrq->data) {
+		printk("%s\t%02u\t%#010x\t%d\n", 
+			mmc_hostname(host), mrq->cmd->opcode,
+			mrq->cmd->arg, mrq->data->blocks*512);
+	} else {
+		printk("%s\t%02u\t%#010x\n",
+			mmc_hostname(host), mrq->cmd->opcode,
+			mrq->cmd->arg);
+	}
+#endif
+
 	if (mrq->data) {
 		pr_debug("%s:     blksz %d blocks %d flags %08x "
 			"tsac %d ms nsac %d\n",
