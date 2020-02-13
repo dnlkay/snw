@@ -515,6 +515,15 @@ config VEXPRESS_SYSCFG
 	  bus. System Configuration interface is one of the possible means
 	  of generating transactions on this bus.
 
+config ULC_VERSATILE
+	bool "ULC Versatile Driver"
+	default y
+	help
+	  This driver is prepared when it comes to the case that system
+	  requires specific routine, for any purpose, being run in anonymous
+	  driver. The functions of the ULC Versatile Driver are supposed not
+	  to affect significant impact to the system.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
