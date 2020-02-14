@@ -3,7 +3,7 @@
 #include <linux/platform_device.h>
 
 /* struct raw_notifier_head uvd_example_chain */
-static BLOCKING_NOTIFIER_HEAD(uvd_example_chain);
+static BLOCKING_NOTIFIER_HEAD(uvd_notifier_list);
 
 static int uvd_probe(struct platform_device *pdev)
 {
@@ -18,18 +18,40 @@ static int __exit uvd_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int uvd_example_event(struct notifier_block *nb,
-                             unsigned long event,
-                             void *ptr)
+#define UVD_NOTIFY_ADD   0x01
+#define UVD_NOTIFY_DEL   0x02
+#define UVD_NOTIFY_ALARM 0x03
+#define UVD_NOTIFY_PEACE 0x04
+
+/* call_chain( */
+
+static int uvd_counter_notify(struct notifier_block *nb,
+                              unsigned long action,
+                              void *data)
 {
-	printk(KERN_INFO "event %lu is fired!\n", event);
+	printk(KERN_INFO "event %lu is fired!\n", action);
 
 	return NOTIFY_STOP;
 }
 
-static struct notifier_block uvd_example_notifier = {
-	.notifier_call = uvd_example_event,
+static struct notifier_block uvd_counter_nb = {
+	.notifier_call = uvd_counter_notify,
 };
+
+
+static int uvd_message_notify(struct notifier_block *nb,
+                              unsigned long action,
+                              void *data)
+{
+	printk(KERN_INFO "event %lu is fired!\n", action);
+
+	return NOTIFY_STOP;
+}
+
+static struct notifier_block uvd_message_nb = {
+	.notifier_call = uvd_message_notify,
+};
+
 
 static struct platform_driver uvd_driver = {
 	.probe  	= uvd_probe,
@@ -45,8 +67,10 @@ static struct platform_device uvd_device = {
 
 static int __init uvd_init(void)
 {
-	blocking_notifier_chain_register(&uvd_example_chain,
-                                         &uvd_example_notifier);
+	blocking_notifier_chain_register(&uvd_notifier_list,
+                                         &uvd_message_nb);
+	blocking_notifier_chain_register(&uvd_notifier_list,
+                                         &uvd_counter_nb);
 
 	platform_driver_register(&uvd_driver);
 	platform_device_register(&uvd_device);
