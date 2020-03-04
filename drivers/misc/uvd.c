@@ -1,6 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/uvd.h>
 #include <linux/platform_device.h>
+#include <linux/delay.h>
 
 #define UVD_NOTIFY_ADD   0x01
 #define UVD_NOTIFY_DEL   0x02
@@ -10,11 +11,28 @@
 /* struct raw_notifier_head uvd_example_chain */
 static BLOCKING_NOTIFIER_HEAD(uvd_notifier_list);
 
+/* commented out as it is replaced to INIT_WORK */
+//DECLARE_WORK(name, void (*function)(void *), void *data);
+struct work_struct uvd_work;
+struct workqueue_struct *uvd_wq;
+
+static void uvd_yell_work(struct work_struct *work)
+{
+	printk("%s popped out... (%#x)\n", __func__, (u32)work);
+	msleep(15 * 1000);
+	queue_work(uvd_wq, &uvd_work);
+	return;
+}
+
 static int uvd_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 
-	/* dbg */ printk("%s dev:%#x...\n", __func__, dev);
+	uvd_wq = create_workqueue("uvd_wq");
+	INIT_WORK(&uvd_work, uvd_yell_work);
+	queue_work(uvd_wq, &uvd_work);
+
+	/* dbg */ printk("%s dev:%#x...\n", __func__, (u32)dev);
 	/* dgb: dev:0x808c9358 */
 	dev_info(dev, "%s\n", __func__);
 
@@ -27,6 +45,10 @@ static int uvd_probe(struct platform_device *pdev)
 
 static int __exit uvd_remove(struct platform_device *pdev)
 {
+	cancel_work_sync(&uvd_work);
+	flush_workqueue(uvd_wq);
+	destroy_workqueue(uvd_wq);
+
 	blocking_notifier_call_chain(&uvd_notifier_list,
 	                             UVD_NOTIFY_DEL, pdev);
 	return 0;
@@ -37,9 +59,9 @@ static int uvd_counter_notify(struct notifier_block *nb,
                               void *data)
 {
 	static int counter = 0;
-	struct device *dev = data;
+//	struct device *dev = data;
 
-	/* dbg */ printk("%s data:%#x...\n", __func__, data);
+	/* dbg */ printk("%s data:%#x...\n", __func__, (u32)data);
 	/* dbg: can't get good address for 'dev' from 'data'? */
 	/* dgb: data:0x808c934858 */
 	printk(KERN_INFO "event %lu is fired!\n", action);
@@ -71,9 +93,9 @@ static int uvd_message_notify(struct notifier_block *nb,
                               unsigned long action,
                               void *data)
 {
-	struct device *dev = data;
+//	struct device *dev = data;
 
-	/* dbg */ printk("%s data:%#x...\n", __func__, data);
+	/* dbg */ printk("%s data:%#x...\n", __func__, (u32)data);
 	printk(KERN_INFO "event %lu is fired!\n", action);
 
 	switch (action) {
