@@ -15,12 +15,28 @@ static BLOCKING_NOTIFIER_HEAD(uvd_notifier_list);
 //DECLARE_WORK(name, void (*function)(void *), void *data);
 struct work_struct uvd_work;
 struct workqueue_struct *uvd_wq;
+static spinlock_t uvd_lock;
 
 static void uvd_yell_work(struct work_struct *work)
 {
+#if 0 /* hard-lockup detection test */
+	staic int uvd_cnt = 0;
+	if (uvd_cnt > 15) {
+		printk("[DEBUG] spin_lock after spin_lock...\n");
+		spin_lock_irq(&uvd_lock);
+	}
+	spin_lock_irq(&uvd_lock);
+	printk("spin_lock... %d\n", uvd_cnt);
+	spin_unlock_irq(&uvd_lock);
+	printk("spin_unlock...\n");
+	msleep(50*1000);
+	uvd_cnt++;
+	queue_work(uvd_wq, &uvd_work);
+#else
 	printk("%s popped out... (%#x)\n", __func__, (u32)work);
 	msleep(15 * 1000);
 	queue_work(uvd_wq, &uvd_work);
+#endif
 	return;
 }
 
